@@ -1,9 +1,8 @@
-# Makefile for building Lua
 # See ../doc/readme.html for installation and customization instructions.
 
-include ../config
-
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
+
+LIB_A=	libcothread.a
 
 PLAT_DIR= posix
 CC= gcc
@@ -27,16 +26,11 @@ MYOBJS=
 
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
-AUX_O=	loskiaux.o
-TIM_O=	ltimelib.o $(PLAT_DIR)/timelib.o
-PRC_O=	lproclib.o $(PLAT_DIR)/proclib.o $(PLAT_DIR)/st/procmgr.o $(PLAT_DIR)/proctab.o
-NET_O=	lnetlib.o $(PLAT_DIR)/netlib.o
-EVT_O=	leventlib.o $(PLAT_DIR)/eventlib.o $(PLAT_DIR)/timeaux.o lnetaux.o
-#FLS_O=	lfilesys.o $(PLAT_DIR)/filesyslib.o
+SCP_O=	lscopelib.o
 
-ALL_O=	$(AUX_O) $(TIM_O) $(PRC_O) $(NET_O) $(EVT_O) $(FLS_O) $(MYOBJS)
+ALL_O=	$(SCP_O) $(MYOBJS)
 ALL_A= $(LIB_A)
-ALL_M= $(TIM_M) $(PRC_M) $(NET_M) $(EVT_M) $(FLS_M)
+ALL_M= $(SCP_M)
 ALL_T= $(ALL_A) $(ALL_M)
 
 # Targets start here.
@@ -50,19 +44,7 @@ a:	$(ALL_A)
 
 m:	$(ALL_M)
 
-$(TIM_M): $(TIM_O) $(AUX_O)
-	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
-
-$(PRC_M): $(PRC_O) $(AUX_O)
-	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
-
-$(NET_M): $(NET_O) $(AUX_O)
-	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
-
-$(EVT_M): $(EVT_O) $(AUX_O)
-	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
-
-$(FLS_M): $(FLS_O) $(AUX_O)
+$(SCP_M): $(SCP_O)
 	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
 
 $(LIB_A): $(ALL_O)

@@ -1,13 +1,19 @@
+#include <uv.h>
 #include <lua.h>
 #include <lauxlib.h>
 
 
+#define CT_HANDLECLS	"uv_handle_t*"
+#define CT_SCOPECLS	"uv_loop_t*"
 #define ct_toloophandle(L)	(uv_loop_t *)lua_touserdata(L, 1)
 
+#if !defined(ct_assert)
+#define ct_assert(X)	((void)(X))
+#endif
 
 static uv_handle_t *ctI_addthread (lua_State *L) {
-	uv_handle_t *h = (uv_handle_t *)lua_touserdata(ct, -1);  /* ct: ...h */
 	lua_State* ct = lua_tothread(L, -1);  /* L: uv...ct */
+	uv_handle_t *h = (uv_handle_t *)lua_touserdata(ct, -1);  /* ct: ...h */
 	lua_pushvalue(L, -1);    /* L: uv...ct,ct */
 	lua_xmove(ct, L, 1);     /* L: uv...ct,ct,h | ct: ... */
 	luaL_setmetatable(L, CT_HANDLECLS);
@@ -37,6 +43,7 @@ static void ctI_delthread (lua_State *L) { /* L: uv...ct */
 
 static void ctI_runthread (lua_State *L, lua_State *ct) {
 	int status;
+	uv_handle_t *h;
 	int c = lua_gettop(ct);         /* ct: ...  | L: uv,trap */
 	lua_pushthread(ct);             /* ct: ...ct */
 	lua_xmove(ct, L, 1);            /* ct: ...  | L: uv,trap,ct */
@@ -44,6 +51,7 @@ static void ctI_runthread (lua_State *L, lua_State *ct) {
 	status = lua_resume(ct, L, c ? c-1 : 0);
 	lua_xmove(L, ct, 1);            /* ct: ...h | L: uv,trap,ct  */
 	lua_insert(L, 1);               /* ct: h... */
+	h = (uv_handle_t *)lua_touserdata(ct, 1);
 	h->data = NULL;
 	if (status == LUA_YIELD) {
 		lua_settop(ct, 1);            /* ct: h */
@@ -71,16 +79,15 @@ static void ctI_runthread (lua_State *L, lua_State *ct) {
 	lua_settop(L, 2);                          /* L: uv,trap */
 }
 
-static void ctI_handled (uv_handle_t* h) {
+static void ctI_handled (uv_handle_t *h) {
 	lua_State *L = (lua_State *)h->loop->data;
 	lua_State *ct = (lua_State *)h->data;
 	ctI_runthread(L, ct);
 }
 
-static void ctI_idlestarted (uv_idle_t* h) {
-	lua_State *L = (lua_State *)h->data;
+static void ctI_idlestarted (uv_idle_t *h) {
 	uv_idle_stop(h);
-	uv_close(h, ctI_handled);
+	uv_close((uv_handle_t *)h, ctI_handled);
 }
 
 static int ctI_scheduleonce (lua_State *L) {
@@ -96,9 +103,13 @@ static int ctI_scheduleonce (lua_State *L) {
 		}
 		ctI_delthread(L);
 		lua_xmove(L, ct, 1);
-		uv_close(h, NULL);  /* TODO: is this allowed? */
+		uv_close((uv_handle_t *)h, NULL);  /* TODO: is this allowed? */
 	}
 	return err;
+}
+
+static void ctI_checkerrors (lua_State *L, int err) {
+	if (err < 0) luaL_error(L, uv_strerror(err));
 }
 
 static void ctI_checkyield (lua_State *L) {
@@ -113,8 +124,8 @@ static void ctI_checkyield (lua_State *L) {
 
 
 static int ctH_gc (lua_State *L) {
-	uv_handle_t *uv = (uv_handle_t *)lua_touserdata(ct, 1);
-	uv_close(uv);
+	uv_handle_t *uv = (uv_handle_t *)lua_touserdata(L, 1);
+	uv_close(uv, NULL);  /* TODO: is this allowed? */
 	lua_pushnil(L);
 	lua_setmetatable(L, 1);
 	return 0;
@@ -123,14 +134,13 @@ static int ctH_gc (lua_State *L) {
 static int ctS_gc (lua_State *L) {
 	uv_loop_t *uv = ct_toloophandle(L);
 	int err = uv_loop_close(uv);
-	lua_assert(err >= 0);
+	ct_assert(err >= 0);
 	return 0;
 }
 
 static int ctS_create (lua_State *L) {
-	uv_loop_t *uv = ct_toloophandle(L);
 	lua_State *ct;
-	int narg;
+	int c;
 	luaL_checktype(L, 2, LUA_TFUNCTION);
 	c = lua_gettop(L)-1;
 	ct = lua_newthread(L);
@@ -138,7 +148,7 @@ static int ctS_create (lua_State *L) {
 		return luaL_error(L, "too many arguments to create");
 	lua_insert(L, 2);  /* move thread below function and args */
 	lua_xmove(L, ct, c);  /* move function and args to 'ct' */
-	lua_newuserdata(ct, sizeof(uv_any_handle));
+	lua_newuserdata(ct, sizeof(union uv_any_handle));
 	ctI_checkerrors(L, ctI_scheduleonce(L));
 	lua_pushlightuserdata(L, ct);
 	return 1;
@@ -148,7 +158,7 @@ static int ctS_resume (lua_State *L) {
 	uv_loop_t *uv = ct_toloophandle(L);
 	int err;
 	luaL_argcheck(L, !uv->data, 1, "already resumed");
-	lua_settop(ct, 2);
+	lua_settop(L, 2);
 	uv->data = L;
 	err = uv_run(uv, UV_RUN_DEFAULT);
 	uv->data = NULL;
@@ -179,7 +189,7 @@ static int ctS_yield (lua_State *L) {
 
 
 static int ct_newscope (lua_State *L) {
-	uv_loop_t *uv = (uv_loop_t *)lua_newuserdata(t, sizeof(uv_loop_t));
+	uv_loop_t *uv = (uv_loop_t *)lua_newuserdata(L, sizeof(uv_loop_t));
 	lua_newtable(L);  /* push the thread registration table */
 	lua_setuservalue(L, -2);
 	uv_loop_init(uv);
