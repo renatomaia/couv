@@ -1,17 +1,17 @@
 Manual
 ======
 
-### `scope = cothread.newscope ()` {#cothread.scope.create}
+### `scope = cothread.scope ()` {#cothread.scope}
 
 Creates a new scope.
 
-### `tid = scope:create (func, ...)` {#scope:create}
+### `tid = scope:create (f, ...)` {#scope:create}
 
-Create a cothread in the scope to run `func` with args `...`.
+Create a cothread in the scope to run function `f` with args `...`.
 
 ### `tid = scope:running ()` {#scope:running}
 
-If it is called from the cothread currently running in this scope, it returns the cothread's ID. Otherwise it returns `nil`.
+If it is called from the cothread currently running in this scope, it returns the cothread's ID as light userdata. Otherwise it returns `nil`.
 
 ### `scope:resume (trap)` {#scope:resume}
 
@@ -23,10 +23,5 @@ Resumes all the cothread in this scope. Whenever a cothread ends, function `trap
 
 ### `scope:yield ()` {#scope:yield}
 
+Suspends the execution of the current thread so other threads can execute.
 
-
-### `cothread.create (func, ...)` {#cothread.create}
-
-### `cothread.yield ()` {#cothread.yield}
-
-### `cothread.sleep ()` {#cothread.sleep}

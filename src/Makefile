@@ -1,15 +1,20 @@
-# See ../doc/readme.html for installation and customization instructions.
-
+# See ../doc/readme.md for installation and 
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
-LIB_A=	libcothread.a
+LUA_HOME= /usr/local
+LUA_INC= $(LUA_HOME)/include
+LUA_LIB= $(LUA_HOME)/lib
+LUA_BIN= $(LUA_HOME)/bin
+LUA_VER= 5.3
 
-PLAT_DIR= posix
-CC= gcc
+LIB_A=	libcothread.a
+SCP_M=	scope.so
+
 LD= ld
-CFLAGS= -O2 -Wall -I. -I$(LUA_INC) -I$(PLAT_DIR) $(SYSCFLAGS) $(MYCFLAGS)
+CC= gcc -std=gnu99
+CFLAGS= -g -Wall -I. -I$(LUA_INC) -I$(PLAT_DIR) $(SYSCFLAGS) $(MYCFLAGS)
 LDFLAGS= -L$(LUA_LIB) $(SYSLDFLAGS) $(MYLDFLAGS)
-LIBS= $(SYSLIBS) $(MYLIBS)
+LIBS= -llua -luv $(SYSLIBS) $(MYLIBS)
 
 AR= ar rcu
 RANLIB= ranlib
@@ -77,7 +82,7 @@ none:
 generic: $(ALL)
 
 linux:
-	$(MAKE) $(ALL) SYSCFLAGS="-fpic" SYSLDFLAGS="-shared"
+	$(MAKE) $(ALL) SYSCFLAGS="-fPIC" SYSLDFLAGS="-shared"
 
 macosx:
 	$(MAKE) $(ALL) SYSCFLAGS="-fno-common" \
