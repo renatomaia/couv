@@ -1,7 +1,7 @@
 # See ../doc/readme.md for installation and 
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
-LUA_HOME= /usr/local
+LUA_HOME= /home/maia/Work/lua/build/5.3
 LUA_INC= $(LUA_HOME)/include
 LUA_LIB= $(LUA_HOME)/lib
 LUA_BIN= $(LUA_HOME)/bin
@@ -12,9 +12,9 @@ SCP_M=	scope.so
 
 LD= ld
 CC= gcc -std=gnu99
-CFLAGS= -g -Wall -I. -I$(LUA_INC) -I$(PLAT_DIR) $(SYSCFLAGS) $(MYCFLAGS)
+CFLAGS= -g -Wall -I. -I$(LUA_INC) $(SYSCFLAGS) $(MYCFLAGS)
 LDFLAGS= -L$(LUA_LIB) $(SYSLDFLAGS) $(MYLDFLAGS)
-LIBS= -llua -luv $(SYSLIBS) $(MYLIBS)
+LIBS= -luv $(SYSLIBS) $(MYLIBS)
 
 AR= ar rcu
 RANLIB= ranlib
@@ -82,13 +82,13 @@ none:
 generic: $(ALL)
 
 linux:
-	$(MAKE) $(ALL) SYSCFLAGS="-fPIC" SYSLDFLAGS="-shared"
+	$(MAKE) $(ALL) LD="gcc" SYSCFLAGS="-fPIC" SYSLDFLAGS="-Wl,-E -O -shared"
 
 macosx:
 	$(MAKE) $(ALL) SYSCFLAGS="-fno-common" \
 	               SYSLDFLAGS="-bundle -undefined dynamic_lookup" \
 	               CC='export MACOSX_DEPLOYMENT_TARGET="10.3"; gcc' \
-                   LD='export MACOSX_DEPLOYMENT_TARGET="10.3"; gcc'
+                 LD='export MACOSX_DEPLOYMENT_TARGET="10.3"; gcc'
 
 solaris:
 	$(MAKE) $(ALL) SYSCFLAGS="-fpic" SYSLDFLAGS="-O -shared"

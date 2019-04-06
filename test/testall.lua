@@ -21,14 +21,17 @@ do print "scope:{create,resume,running}"
     assert(select(4, ...) == 3)
     return ...
   end, "testing", 1, 2, 3)
+  collectgarbage("collect")
   terr = s:create(function (errmsg)
     asserterror("already resumed", s.resume, s)
     assert(s:running() == terr)
     error(errmsg)
   end, "oops!")
+  collectgarbage("collect")
   local c = 0
   s:resume(function (tid, ct, ok, ...)
     asserterror("already resumed", s.resume, s)
+    collectgarbage("collect")
     assert(s:running() == nil)
     --assert(coroutine.status(ct) == "dead")
     if tid == tok then
@@ -46,6 +49,7 @@ do print "scope:{create,resume,running}"
     end
     c = c+1
   end)
+  collectgarbage("collect")
   assert(c == 2)
   assert(s:running() == nil)
 end
