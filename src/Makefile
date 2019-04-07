@@ -7,8 +7,8 @@ LUA_LIB= $(LUA_HOME)/lib
 LUA_BIN= $(LUA_HOME)/bin
 LUA_VER= 5.3
 
-LIB_A=	libcothread.a
-SCP_M=	scope.so
+LIB_A=	libcoutil.a
+SCH_M=	scheduler.so
 
 LD= ld
 CC= gcc -std=gnu99
@@ -31,11 +31,11 @@ MYOBJS=
 
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
-SCP_O=	lscopelib.o
+SCH_O=	lschlib.o
 
-ALL_O=	$(SCP_O) $(MYOBJS)
+ALL_O=	$(SCH_O) $(MYOBJS)
 ALL_A= $(LIB_A)
-ALL_M= $(SCP_M)
+ALL_M= $(SCH_M)
 ALL_T= $(ALL_A) $(ALL_M)
 
 # Targets start here.
@@ -49,7 +49,7 @@ a:	$(ALL_A)
 
 m:	$(ALL_M)
 
-$(SCP_M): $(SCP_O)
+$(SCH_M): $(SCH_O)
 	$(LD) -o $@ $(LDFLAGS) $^ $(LIBS)
 
 $(LIB_A): $(ALL_O)
@@ -82,7 +82,7 @@ none:
 generic: $(ALL)
 
 linux:
-	$(MAKE) $(ALL) LD="gcc" SYSCFLAGS="-fPIC" SYSLDFLAGS="-Wl,-E -O -shared"
+	$(MAKE) $(ALL) LD="gcc" SYSCFLAGS="-fPIC" SYSLDFLAGS="-shared"
 
 macosx:
 	$(MAKE) $(ALL) SYSCFLAGS="-fno-common" \
